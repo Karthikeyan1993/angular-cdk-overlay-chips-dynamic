@@ -1,0 +1,16 @@
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-sm-6 col-md-6 col-lg-6">
+      <div class="chip-container">
+        <ng-container>
+          <app-micro-chip [item]="item" (close)="closeItem($event)" *ngFor="let item of chips">
+
+          </app-micro-chip>
+        </ng-container>
+        <button class="btn btn-danger" (emitter)="selectedItem($event)" (click)="flag=!flag" [flag]="flag" [appAutoCompletePopup]="data">
+                   <span class="fa" [ngClass]="flag ? 'fa-minus' : 'fa-plus'" aria-hidden="true"></span>
+        </button>
+      </div>
+		</div>
+	</div>
+</div>

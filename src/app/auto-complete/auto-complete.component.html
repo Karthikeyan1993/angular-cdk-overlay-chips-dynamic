@@ -1,0 +1,9 @@
+<div class="dropdown mt-2">
+	<input type="text"[(ngModel)]="item" class="form-control no-radius no-shadow" appAutoDirective [template]="template" (emitNewItem)="addNewItem($event)">
+</div>
+	<ng-template #template>
+		<ul class="dropdown-menu show no-radius">
+			<li class="dropdown-item" (click)="selected(item)" *ngFor="let item of data">
+				{{item}}</li>
+		</ul>
+	</ng-template>
