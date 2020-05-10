@@ -33,10 +33,17 @@ import { NgControl } from "@angular/forms";
 })
 export class AutoDirectiveDirective {
   @Input("template") content: TemplateRef<any>;
+  @Input() appAutoDirective: any[];
+  @Input() autoCompleteWaitMs = 0;
+  @Input() autoCompleteMinLength = 1;
+  @Output() emitNewItem: EventEmitter<string> = new EventEmitter<string>();
+  @Output() emitFilterValues: EventEmitter<any[]> = new EventEmitter<any[]>();
   private _portal: TemplatePortal<any>;
   private _overlayRef: OverlayRef;
-  @Output() emitNewItem: EventEmitter<string> = new EventEmitter<string>();
+
+  inputEventSubscription: Subject<any> = new Subject<any>();
   listenFunc: Function;
+  matches: any[];
   constructor(
     private _orgin: ElementRef,
     private _overlay: Overlay,
@@ -51,11 +58,28 @@ export class AutoDirectiveDirective {
     });
   }
 
+  ngOnInit() {
+    this.asyncAction();
+  }
+
   @HostListener("click")
   @HostListener("focus")
   focus = () => {
     this.toggle();
+    if (this.autoCompleteMinLength === 0) {
+      this.inputEventSubscription.next(this._orgin.nativeElement.value || '');
+    }
   };
+
+  @HostListener('input', ['$event'])
+  oninput = (e) => {
+    const _api = e.target;
+    const _value: string = _api.value !== undefined ? _api.value : _api.textContent !== undefined ? _api.textContent : _api.innerText;
+    if (_value.length >= this.autoCompleteMinLength) {
+      this.emitInputValue(_value);
+    } else { }
+  }
+
 
   @HostListener("keyup", ["$event"])
   onchange = e => {
@@ -75,11 +99,42 @@ export class AutoDirectiveDirective {
     }
 
     if (e.keyCode == 8) {
-      if (txtVal.length <= 1) {
-
+      if (txtVal.length < 1) {
+        this.matches = this.appAutoDirective;
+        this.emitFilterValues.next(this.matches);
       }
     }
   };
+
+  private emitInputValue = (param: any): void => { this.inputEventSubscription.next(param); };
+
+  private asyncAction = (param?: any): void => {
+    this.inputEventSubscription
+      .pipe(debounceTime(this.autoCompleteWaitMs), distinctUntilChanged()
+        , mergeMap((e) => {
+          return from(this.appAutoDirective)
+            .pipe(filter((f) => this.filterText(e, f)), toArray());
+        })).subscribe((result) => this.finalSearchOperation(result));
+  }
+
+
+  private filterText = (e: string, f: any): any => {
+    return f.toLowerCase().indexOf(e.toLowerCase()) >= 0;
+  }
+
+  private finalSearchOperation = (param: any): void => {
+    this.matches = param;
+    if (this.hasMatches()) {
+      this.emitFilterValues.next(this.matches);
+    } else {
+      this.emitFilterValues.next([]);
+    }
+  }
+
+  private hasMatches = (param?: any): boolean => {
+    return this.matches.length > 0;
+  }
+
 
   get overlayRef(): OverlayRef {
     return this._overlayRef;
